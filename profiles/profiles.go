@@ -3,6 +3,7 @@ package profiles
 import (
 	"github.com/bogdanfinn/fhttp/http2"
 	tls "github.com/bogdanfinn/utls"
+	quic "github.com/refraction-networking/uquic"
 )
 
 var DefaultClientProfile = Chrome_133
@@ -86,6 +87,8 @@ type ClientProfile struct {
 	pseudoHeaderOrder []string
 	settingsOrder     []http2.SettingID
 	connectionFlow    uint32
+
+	quicSpec quic.QUICSpec
 }
 
 func NewClientProfile(clientHelloId tls.ClientHelloID, settings map[http2.SettingID]uint32, settingsOrder []http2.SettingID, pseudoHeaderOrder []string, connectionFlow uint32, priorities []http2.Priority, headerPriority *http2.PriorityParam) ClientProfile {
@@ -98,6 +101,10 @@ func NewClientProfile(clientHelloId tls.ClientHelloID, settings map[http2.Settin
 		priorities:        priorities,
 		headerPriority:    headerPriority,
 	}
+}
+
+func (c ClientProfile) GetQUICSpec() quic.QUICSpec {
+	return c.quicSpec
 }
 
 func (c ClientProfile) GetClientHelloSpec() (tls.ClientHelloSpec, error) {

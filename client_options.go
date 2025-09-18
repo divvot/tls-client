@@ -63,7 +63,10 @@ type httpClientConfig struct {
 	insecureSkipVerify          bool
 	withRandomTlsExtensionOrder bool
 	forceHttp1                  bool
-	disableHttp3                bool
+
+	forceHttp3    bool
+	useHttp3After bool
+	disableHttp3  bool
 
 	// Establish a connection to origin server via ipv4 only
 	disableIPV6 bool
@@ -236,6 +239,20 @@ func WithForceHttp1() HttpClientOption {
 func WithDisableHttp3() HttpClientOption {
 	return func(config *httpClientConfig) {
 		config.disableHttp3 = true
+	}
+}
+
+// WithForceHttp3 configures a client to force to use QUIC with HTTP/3 as the used protocol.
+func WithForceHttp3() HttpClientOption {
+	return func(config *httpClientConfig) {
+		config.forceHttp3 = true
+	}
+}
+
+// WithUseHttp3After configures a client to use HTTP/3 after the first successful HTTP/2 request
+func WithUseHttp3After() HttpClientOption {
+	return func(config *httpClientConfig) {
+		config.useHttp3After = true
 	}
 }
 

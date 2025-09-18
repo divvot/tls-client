@@ -5,6 +5,7 @@ import (
 
 	"github.com/bogdanfinn/fhttp/http2"
 	tls "github.com/bogdanfinn/utls"
+	quic "github.com/refraction-networking/uquic"
 )
 
 var ZalandoAndroidMobile = ClientProfile{
@@ -1551,6 +1552,123 @@ var Okhttp4Android7 = ClientProfile{
 			}, nil
 		},
 	},
+	settings: map[http2.SettingID]uint32{
+		http2.SettingInitialWindowSize: 16777216,
+	},
+	settingsOrder: []http2.SettingID{
+		http2.SettingInitialWindowSize,
+	},
+	headerPriority: &http2.PriorityParam{},
+	pseudoHeaderOrder: []string{
+		":method",
+		":path",
+		":authority",
+		":scheme",
+	},
+	connectionFlow: 16711681,
+}
+
+var InstagramQuicIOS = ClientProfile{
+
+	// Will just use for check resumption
+	clientHelloId: tls.HelloChrome_100_PSK,
+
+	quicSpec: quic.QUICSpec{
+		InitialPacketSpec: quic.InitialPacketSpec{
+			SrcConnIDLength:        0,
+			DestConnIDLength:       8,
+			InitPacketNumberLength: 3,
+			InitPacketNumber:       3011200, // A random 24-bit number
+			ClientTokenLength:      0,
+
+			FrameBuilder: &quic.QUICFrames{
+				quic.QUICFrameCrypto{
+					Offset: 0,
+					Length: 0,
+				},
+				quic.QUICFramePadding{
+					UntilLength: 1215,
+				},
+			},
+		},
+
+		ClientHelloSpec: &tls.ClientHelloSpec{
+			TLSVersMin: tls.VersionTLS13,
+			TLSVersMax: tls.VersionTLS13,
+
+			CompressionMethods: []uint8{
+				0x0,
+			},
+
+			CipherSuites: []uint16{
+				tls.TLS_AES_128_GCM_SHA256,
+				tls.FAKE_TLS_EMPTY_RENEGOTIATION_INFO_SCSV,
+			},
+
+			Extensions: []tls.TLSExtension{
+				&tls.SNIExtension{},
+				&tls.ALPNExtension{
+					AlpnProtocols: []string{"h3-29"},
+				},
+				&tls.SupportedVersionsExtension{Versions: []uint16{
+					tls.VersionTLS13,
+				}},
+				&tls.KeyShareExtension{KeyShares: []tls.KeyShare{
+					{Group: tls.X25519},
+				}},
+				&tls.QUICTransportParametersExtension{
+					TransportParameters: tls.TransportParameters{
+						tls.InitialMaxStreamDataBidiLocal(163840),
+						tls.InitialMaxStreamDataBidiRemote(262144),
+						tls.InitialMaxStreamDataUni(262144),
+						tls.InitialMaxData(6291456),
+						tls.InitialMaxStreamsBidi(2048),
+						tls.InitialMaxStreamsUni(100),
+						tls.MaxIdleTimeout(30000),
+
+						&tls.FakeQUICTransportParameter{
+							Id:  0x0a,
+							Val: []byte{3},
+						},
+
+						tls.MaxUDPPayloadSize(1252),
+						tls.ActiveConnectionIDLimit(2),
+						tls.InitialSourceConnectionID([]byte{}),
+
+						&tls.FakeQUICTransportParameter{
+							Id:  0xff0a001,
+							Val: []byte{0},
+						},
+
+						&tls.FakeQUICTransportParameter{
+							Id:  0x5178,
+							Val: []byte{1},
+						},
+					},
+				},
+				&tls.PSKKeyExchangeModesExtension{Modes: []uint8{
+					tls.PskModeDHE,
+				}},
+				&tls.SupportedCurvesExtension{Curves: []tls.CurveID{
+					tls.X25519,
+					tls.CurveP256,
+				}},
+				&tls.SignatureAlgorithmsExtension{
+					SupportedSignatureAlgorithms: []tls.SignatureScheme{
+						tls.ECDSAWithP256AndSHA256,
+						tls.ECDSAWithP384AndSHA384,
+						tls.PSSWithSHA512,
+						tls.PSSWithSHA384,
+						tls.PSSWithSHA256,
+						tls.PKCS1WithSHA512,
+						tls.PKCS1WithSHA384,
+						tls.PKCS1WithSHA256,
+					}},
+				&tls.UtlsPreSharedKeyExtension{},
+			},
+		},
+	},
+
 	settings: map[http2.SettingID]uint32{
 		http2.SettingInitialWindowSize: 16777216,
 	},

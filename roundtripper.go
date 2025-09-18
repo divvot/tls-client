@@ -11,10 +11,11 @@ import (
 
 	http "github.com/bogdanfinn/fhttp"
 	"github.com/bogdanfinn/fhttp/http2"
-	"github.com/bogdanfinn/quic-go-utls/http3"
 	"github.com/bogdanfinn/tls-client/bandwidth"
 	"github.com/bogdanfinn/tls-client/profiles"
 	tls "github.com/bogdanfinn/utls"
+	quic "github.com/refraction-networking/uquic"
+	"github.com/refraction-networking/uquic/http3"
 	"golang.org/x/net/proxy"
 )
 
@@ -24,6 +25,7 @@ var errProtocolNegotiated = errors.New("protocol negotiated")
 
 type roundTripper struct {
 	clientHelloId     tls.ClientHelloID
+	quicSpec          quic.QUICSpec
 	certificatePinner CertificatePinner
 
 	dialer proxy.ContextDialer
@@ -55,6 +57,9 @@ type roundTripper struct {
 	withRandomTlsExtensionOrder bool
 	disableIPV6                 bool
 	disableIPV4                 bool
+
+	useHttp3After bool
+	forceHttp3    bool
 }
 
 func (rt *roundTripper) CloseIdleConnections() {
@@ -76,6 +81,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	addr := rt.getDialTLSAddr(req)
 
 	rt.cachedTransportsLck.Lock()
+	defer rt.cachedTransportsLck.Unlock()
 
 	if _, ok := rt.cachedTransports[addr]; !ok {
 		if err := rt.getTransport(req, addr); err != nil {
@@ -89,8 +95,16 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		}
 	}
 
+	if rt.useHttp3After {
+		if t, ok := rt.cachedTransports[addr]; ok {
+			rt.cachedTransports[addr] = rt.buildHttp3Transport()
+			rt.useHttp3After = false
+
+			return t.RoundTrip(req)
+		}
+	}
+
 	t := rt.cachedTransports[addr]
-	rt.cachedTransportsLck.Unlock()
 
 	return t.RoundTrip(req)
 }
@@ -103,6 +117,11 @@ func (rt *roundTripper) getTransport(req *http.Request, addr string) error {
 	case "https":
 	default:
 		return fmt.Errorf("invalid URL scheme: [%v]", req.URL.Scheme)
+	}
+
+	if rt.forceHttp3 {
+		rt.cachedTransports[addr] = rt.buildHttp3Transport()
+		return nil
 	}
 
 	_, err := rt.dialTLS(req.Context(), "tcp", addr)
@@ -326,6 +345,63 @@ func (rt *roundTripper) dial(ctx context.Context, network, addr string) (net.Con
 	return rt.dialer.DialContext(ctx, network, addr)
 }
 
+func (rt *roundTripper) buildHttp3Transport() *http3.Transport {
+
+	utlsConfig := &tls.Config{
+		ClientSessionCache: rt.clientSessionCache,
+		InsecureSkipVerify: rt.insecureSkipVerify,
+		OmitEmptyPsk:       true,
+	}
+
+	if rt.transportOptions != nil {
+		utlsConfig.RootCAs = rt.transportOptions.RootCAs
+	}
+
+	if rt.serverNameOverwrite != "" {
+		utlsConfig.ServerName = rt.serverNameOverwrite
+	}
+
+	if rt.transportOptions != nil {
+		utlsConfig.RootCAs = rt.transportOptions.RootCAs
+	}
+
+	if rt.serverNameOverwrite != "" {
+		utlsConfig.ServerName = rt.serverNameOverwrite
+	}
+
+	quicConfig := &quic.Config{}
+
+	return &http3.Transport{
+		TLSClientConfig: utlsConfig,
+		QUICConfig:      quicConfig,
+
+		Dial: func(ctx context.Context, addr string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlyConnection, error) {
+			udpConn, err := net.ListenUDP("udp", nil)
+			if err != nil {
+				return nil, err
+			}
+
+			network := "udp"
+			ut := &quic.UTransport{
+				Transport: &quic.Transport{
+					Conn: udpConn,
+				},
+
+				QUICSpec: &rt.quicSpec,
+			}
+
+			udpAddr, err := net.ResolveUDPAddr(network, addr)
+			if err != nil {
+				return nil, err
+			}
+
+			conn, err := ut.DialEarly(ctx, udpAddr, tlsCfg, cfg)
+
+			return conn, err
+		},
+	}
+}
+
 func (rt *roundTripper) buildHttp1Transport() *http.Transport {
 	utlsConfig := &tls.Config{ClientSessionCache: rt.clientSessionCache, InsecureSkipVerify: rt.insecureSkipVerify, OmitEmptyPsk: true}
 	if rt.transportOptions != nil {
@@ -371,7 +447,23 @@ func (rt *roundTripper) getDialTLSAddr(req *http.Request) string {
 	return net.JoinHostPort(req.URL.Host, "443")
 }
 
-func newRoundTripper(clientProfile profiles.ClientProfile, transportOptions *TransportOptions, serverNameOverwrite string, insecureSkipVerify bool, withRandomTlsExtensionOrder bool, forceHttp1 bool, disableHttp3 bool, certificatePins map[string][]string, badPinHandlerFunc BadPinHandlerFunc, disableIPV6 bool, disableIPV4 bool, bandwidthTracker bandwidth.BandwidthTracker, dialer ...proxy.ContextDialer) (http.RoundTripper, error) {
+var newRoundTripper = func(
+	clientProfile profiles.ClientProfile,
+	transportOptions *TransportOptions,
+	serverNameOverwrite string,
+	insecureSkipVerify bool,
+	withRandomTlsExtensionOrder bool,
+	forceHttp1 bool,
+	forceHttp3 bool,
+	useHttp3After bool,
+	disableHttp3 bool,
+	certificatePins map[string][]string,
+	badPinHandlerFunc BadPinHandlerFunc,
+	disableIPV6 bool,
+	disableIPV4 bool,
+	bandwidthTracker bandwidth.BandwidthTracker,
+	dialer ...proxy.ContextDialer,
+) (http.RoundTripper, error) {
 	pinner, err := NewCertificatePinner(certificatePins)
 	if err != nil {
 		return nil, fmt.Errorf("can not instantiate certificate pinner: %w", err)
@@ -408,6 +500,10 @@ func newRoundTripper(clientProfile profiles.ClientProfile, transportOptions *Tra
 		disableIPV6:                 disableIPV6,
 		disableIPV4:                 disableIPV4,
 		bandwidthTracker:            bandwidthTracker,
+
+		useHttp3After: useHttp3After,
+		forceHttp3:    forceHttp3,
+		quicSpec:      clientProfile.GetQUICSpec(),
 	}
 
 	if len(dialer) > 0 {
@@ -420,9 +516,9 @@ func newRoundTripper(clientProfile profiles.ClientProfile, transportOptions *Tra
 }
 
 func supportsSessionResumption(id tls.ClientHelloID) bool {
-	spec, err := tls.UTLSIdToSpec(id)
+	spec, err := id.ToSpec()
 	if err != nil {
-		spec, err = id.ToSpec()
+		spec, err = tls.UTLSIdToSpec(id)
 
 		if err != nil {
 			return false

@@ -161,7 +161,22 @@ func buildFromConfig(logger Logger, config *httpClientConfig) (*http.Client, ban
 
 	clientProfile := config.clientProfile
 
-	transport, err := newRoundTripper(clientProfile, config.transportOptions, config.serverNameOverwrite, config.insecureSkipVerify, config.withRandomTlsExtensionOrder, config.forceHttp1, config.disableHttp3, config.certificatePins, config.badPinHandler, config.disableIPV6, config.disableIPV4, bandwidthTracker, dialer)
+	transport, err := newRoundTripper(clientProfile,
+		config.transportOptions,
+		config.serverNameOverwrite,
+		config.insecureSkipVerify,
+		config.withRandomTlsExtensionOrder,
+		config.forceHttp1,
+		config.forceHttp3,
+		config.useHttp3After,
+		config.disableHttp3,
+		config.certificatePins,
+		config.badPinHandler,
+		config.disableIPV6,
+		config.disableIPV4,
+		bandwidthTracker,
+		dialer)
+
 	if err != nil {
 		return nil, nil, clientProfile, err
 	}
@@ -264,7 +279,22 @@ func (c *httpClient) applyProxy() error {
 		dialer = proxyDialer
 	}
 
-	transport, err := newRoundTripper(c.config.clientProfile, c.config.transportOptions, c.config.serverNameOverwrite, c.config.insecureSkipVerify, c.config.withRandomTlsExtensionOrder, c.config.forceHttp1, c.config.disableHttp3, c.config.certificatePins, c.config.badPinHandler, c.config.disableIPV6, c.config.disableIPV4, c.bandwidthTracker, dialer)
+	transport, err := newRoundTripper(c.config.clientProfile,
+		c.config.transportOptions,
+		c.config.serverNameOverwrite,
+		c.config.insecureSkipVerify,
+		c.config.withRandomTlsExtensionOrder,
+		c.config.forceHttp1,
+		c.config.forceHttp3,
+		c.config.useHttp3After,
+		c.config.disableHttp3,
+		c.config.certificatePins,
+		c.config.badPinHandler,
+		c.config.disableIPV6,
+		c.config.disableIPV4,
+		c.bandwidthTracker,
+		dialer)
+
 	if err != nil {
 		return err
 	}
@@ -337,7 +367,9 @@ func (c *httpClient) Do(req *http.Request) (*http.Response, error) {
 		req.Header = c.config.defaultHeaders.Clone()
 	}
 
-	req.Header[http.HeaderOrderKey] = allToLower(req.Header[http.HeaderOrderKey])
+	// User should be cared for this
+	// req.Header[http.HeaderOrderKey] = allToLower(req.Header[http.HeaderOrderKey])
+
 	c.headerLck.Unlock()
 
 	if c.config.debug {
