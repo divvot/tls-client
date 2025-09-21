@@ -1569,9 +1569,6 @@ var Okhttp4Android7 = ClientProfile{
 }
 
 var InstagramIOS = ClientProfile{
-
-	// Will just use for check resumption
-	// and if usehttp3after is set
 	clientHelloId: tls.ClientHelloID{
 		Client:  "Instagram IOS",
 		Version: "1",
