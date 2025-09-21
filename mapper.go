@@ -90,3 +90,51 @@ var certCompression = map[string]tls.CertCompressionAlgo{
 	"brotli": tls.CertCompressionBrotli,
 	"zstd":   tls.CertCompressionZstd,
 }
+
+var quicParameters = map[string]func(val uint64) tls.TransportParameter{
+	"InitialMaxData": func(val uint64) tls.TransportParameter {
+		return tls.InitialMaxData(val)
+	},
+	"ActiveConnectionIDLimit": func(val uint64) tls.TransportParameter {
+		return tls.ActiveConnectionIDLimit(val)
+	},
+	"InitialMaxStreamDataBidiLocal": func(val uint64) tls.TransportParameter {
+		return tls.InitialMaxStreamDataBidiLocal(val)
+	},
+	"InitialMaxStreamDataBidiRemote": func(val uint64) tls.TransportParameter {
+		return tls.InitialMaxStreamDataBidiRemote(val)
+	},
+	"InitialMaxStreamDataUni": func(val uint64) tls.TransportParameter {
+		return tls.InitialMaxStreamDataUni(val)
+	},
+	"MaxAckDelay": func(val uint64) tls.TransportParameter {
+		return tls.MaxAckDelay(val)
+	},
+	"DisableActiveMigration": func(_ uint64) tls.TransportParameter {
+		return &tls.DisableActiveMigration{}
+	},
+	"InitialMaxStreamsBidi": func(val uint64) tls.TransportParameter {
+		return tls.InitialMaxStreamsBidi(val)
+	},
+	"InitialMaxStreamsUni": func(val uint64) tls.TransportParameter {
+		return tls.InitialMaxStreamsUni(val)
+	},
+	"InitialSourceConnectionID": func(val uint64) tls.TransportParameter {
+		return tls.InitialSourceConnectionID{}
+	},
+	"GREASEQUICBit": func(val uint64) tls.TransportParameter {
+		return &tls.GREASEQUICBit{}
+	},
+	"GREASETransportParameter": func(val uint64) tls.TransportParameter {
+		return &tls.GREASETransportParameter{}
+	},
+	"MaxIdleTimeout": func(val uint64) tls.TransportParameter {
+		return tls.MaxIdleTimeout(val)
+	},
+	"MaxUDPPayloadSize": func(val uint64) tls.TransportParameter {
+		return tls.MaxUDPPayloadSize(val)
+	},
+	"MaxDatagramFrameSize": func(val uint64) tls.TransportParameter {
+		return tls.MaxDatagramFrameSize(val)
+	},
+}

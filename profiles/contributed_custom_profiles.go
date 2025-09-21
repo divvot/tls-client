@@ -1568,18 +1568,67 @@ var Okhttp4Android7 = ClientProfile{
 	connectionFlow: 16711681,
 }
 
-var InstagramQuicIOS = ClientProfile{
+var InstagramIOS = ClientProfile{
 
 	// Will just use for check resumption
-	clientHelloId: tls.HelloChrome_100_PSK,
+	// and if usehttp3after is set
+	clientHelloId: tls.ClientHelloID{
+		Client:  "Instagram IOS",
+		Version: "1",
+		Seed:    nil,
+		SpecFactory: func() (tls.ClientHelloSpec, error) {
+			return tls.ClientHelloSpec{
+				CompressionMethods: []uint8{
+					0x0,
+				},
+
+				CipherSuites: []uint16{
+					tls.TLS_AES_128_GCM_SHA256,
+					tls.FAKE_TLS_EMPTY_RENEGOTIATION_INFO_SCSV,
+				},
+
+				Extensions: []tls.TLSExtension{
+					&tls.SNIExtension{},
+					&tls.ALPNExtension{
+						AlpnProtocols: []string{"h2"},
+					},
+					&tls.SupportedVersionsExtension{Versions: []uint16{
+						tls.VersionTLS13,
+					}},
+					&tls.KeyShareExtension{KeyShares: []tls.KeyShare{
+						{Group: tls.X25519},
+					}},
+					&tls.PSKKeyExchangeModesExtension{Modes: []uint8{
+						tls.PskModeDHE,
+					}},
+					&tls.SupportedCurvesExtension{Curves: []tls.CurveID{
+						tls.X25519,
+						tls.CurveP256,
+					}},
+					&tls.SignatureAlgorithmsExtension{
+						SupportedSignatureAlgorithms: []tls.SignatureScheme{
+							tls.ECDSAWithP256AndSHA256,
+							tls.ECDSAWithP384AndSHA384,
+							tls.PSSWithSHA512,
+							tls.PSSWithSHA384,
+							tls.PSSWithSHA256,
+							tls.PKCS1WithSHA512,
+							tls.PKCS1WithSHA384,
+							tls.PKCS1WithSHA256,
+						}},
+					&tls.UtlsPreSharedKeyExtension{},
+				},
+			}, nil
+		},
+	},
 
 	quicSpec: quic.QUICSpec{
 		InitialPacketSpec: quic.InitialPacketSpec{
 			SrcConnIDLength:        0,
 			DestConnIDLength:       8,
 			InitPacketNumberLength: 3,
-			InitPacketNumber:       3011200, // A random 24-bit number
 			ClientTokenLength:      0,
+			RandomInitPacketNumber: true,
 
 			FrameBuilder: &quic.QUICFrames{
 				quic.QUICFrameCrypto{
@@ -1608,7 +1657,7 @@ var InstagramQuicIOS = ClientProfile{
 			Extensions: []tls.TLSExtension{
 				&tls.SNIExtension{},
 				&tls.ALPNExtension{
-					AlpnProtocols: []string{"h3-29"},
+					AlpnProtocols: []string{"h3-alias-02"},
 				},
 				&tls.SupportedVersionsExtension{Versions: []uint16{
 					tls.VersionTLS13,

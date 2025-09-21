@@ -2,6 +2,7 @@ package tls_client
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"strconv"
 	"strings"
@@ -14,7 +15,26 @@ type CandidateCipherSuites struct {
 	AeadId string
 }
 
-func GetSpecFactoryFromJa3String(ja3String string, supportedSignatureAlgorithms, supportedDelegatedCredentialsAlgorithms, supportedVersions, keyShareCurves, supportedProtocolsALPN, supportedProtocolsALPS []string, echCandidateCipherSuites []CandidateCipherSuites, candidatePayloads []uint16, certCompressionAlgorithms []string, recordSizeLimit uint16) (func() (tls.ClientHelloSpec, error), error) {
+type QUICTransportParameter struct {
+	Name  string
+	Data  string
+	Value uint64
+}
+
+func GetSpecFactoryFromJa3String(
+	ja3String string,
+	supportedSignatureAlgorithms,
+	supportedDelegatedCredentialsAlgorithms,
+	supportedVersions,
+	keyShareCurves,
+	supportedProtocolsALPN,
+	supportedProtocolsALPS []string,
+	echCandidateCipherSuites []CandidateCipherSuites,
+	candidatePayloads []uint16,
+	certCompressionAlgorithms []string,
+	quicTransportParameters []QUICTransportParameter,
+	recordSizeLimit uint16,
+) (func() (tls.ClientHelloSpec, error), error) {
 	return func() (tls.ClientHelloSpec, error) {
 		var mappedSignatureAlgorithms []tls.SignatureScheme
 
@@ -25,10 +45,12 @@ func GetSpecFactoryFromJa3String(ja3String string, supportedSignatureAlgorithms,
 			} else {
 				supportedSignatureAlgorithmAsUint, err := strconv.ParseUint(supportedSignatureAlgorithm, 16, 16)
 				if err != nil {
-					return tls.ClientHelloSpec{}, fmt.Errorf("%s is not a valid supportedSignatureAlgorithm", supportedSignatureAlgorithm)
+					return tls.ClientHelloSpec{}, fmt.Errorf(
+						"GetSpecFactoryFromJa3String: %s is not a valid supportedSignatureAlgorithm", supportedSignatureAlgorithm)
 				}
 
-				mappedSignatureAlgorithms = append(mappedSignatureAlgorithms, tls.SignatureScheme(uint16(supportedSignatureAlgorithmAsUint)))
+				mappedSignatureAlgorithms = append(mappedSignatureAlgorithms,
+					tls.SignatureScheme(uint16(supportedSignatureAlgorithmAsUint)))
 			}
 		}
 
@@ -37,14 +59,18 @@ func GetSpecFactoryFromJa3String(ja3String string, supportedSignatureAlgorithms,
 		for _, supportedDelegatedCredentialsAlgorithm := range supportedDelegatedCredentialsAlgorithms {
 			delegatedCredentialsAlgorithm, ok := delegatedCredentialsAlgorithms[supportedDelegatedCredentialsAlgorithm]
 			if ok {
-				mappedDelegatedCredentialsAlgorithms = append(mappedDelegatedCredentialsAlgorithms, delegatedCredentialsAlgorithm)
+				mappedDelegatedCredentialsAlgorithms = append(mappedDelegatedCredentialsAlgorithms,
+					delegatedCredentialsAlgorithm)
 			} else {
-				supportedDelegatedCredentialsAlgorithmAsUint, err := strconv.ParseUint(supportedDelegatedCredentialsAlgorithm, 16, 16)
+				supportedDelegatedCredentialsAlgorithmAsUint, err := strconv.ParseUint(
+					supportedDelegatedCredentialsAlgorithm, 16, 16)
 				if err != nil {
-					return tls.ClientHelloSpec{}, fmt.Errorf("%s is not a valid supportedDelegatedCredentialsAlgorithm", supportedDelegatedCredentialsAlgorithm)
+					return tls.ClientHelloSpec{}, fmt.Errorf("GetSpecFactoryFromJa3String: %s is not a valid supportedDelegatedCredentialsAlgorithm",
+						supportedDelegatedCredentialsAlgorithm)
 				}
 
-				mappedDelegatedCredentialsAlgorithms = append(mappedDelegatedCredentialsAlgorithms, tls.SignatureScheme(uint16(supportedDelegatedCredentialsAlgorithmAsUint)))
+				mappedDelegatedCredentialsAlgorithms = append(mappedDelegatedCredentialsAlgorithms,
+					tls.SignatureScheme(uint16(supportedDelegatedCredentialsAlgorithmAsUint)))
 			}
 		}
 
@@ -62,12 +88,12 @@ func GetSpecFactoryFromJa3String(ja3String string, supportedSignatureAlgorithms,
 			} else {
 				kdfId, err := strconv.ParseUint(echCandidateCipherSuites.KdfId, 16, 16)
 				if err != nil {
-					return tls.ClientHelloSpec{}, fmt.Errorf("%s is not a valid KdfId", echCandidateCipherSuites.KdfId)
+					return tls.ClientHelloSpec{}, fmt.Errorf("GetSpecFactoryFromJa3String: %s is not a valid KdfId", echCandidateCipherSuites.KdfId)
 				}
 
 				aeadId, err := strconv.ParseUint(echCandidateCipherSuites.AeadId, 16, 16)
 				if err != nil {
-					return tls.ClientHelloSpec{}, fmt.Errorf("%s is not a valid aeadId", echCandidateCipherSuites.AeadId)
+					return tls.ClientHelloSpec{}, fmt.Errorf("GetSpecFactoryFromJa3String: %s is not a valid aeadId", echCandidateCipherSuites.AeadId)
 				}
 
 				mappedHpkeSymmetricCipherSuites = append(mappedHpkeSymmetricCipherSuites, tls.HPKESymmetricCipherSuite{
@@ -113,11 +139,64 @@ func GetSpecFactoryFromJa3String(ja3String string, supportedSignatureAlgorithms,
 			}
 		}
 
-		return stringToSpec(ja3String, mappedSignatureAlgorithms, mappedDelegatedCredentialsAlgorithms, mappedTlsVersions, mappedKeyShares, mappedHpkeSymmetricCipherSuites, candidatePayloads, supportedProtocolsALPN, supportedProtocolsALPS, mappedCertCompressionAlgorithms, recordSizeLimit)
+		var mappedQuicTransportParameters tls.TransportParameters
+
+		for _, quicParameter := range quicTransportParameters {
+			quicParameterFunc, ok := quicParameters[quicParameter.Name]
+			if ok {
+				parameter := quicParameterFunc(quicParameter.Value)
+				mappedQuicTransportParameters = append(mappedQuicTransportParameters, parameter)
+			} else {
+
+				// I'll guess it's a fake parameter
+
+				fakeId, err := strconv.ParseUint(quicParameter.Name, 16, 16)
+				if err != nil {
+					return tls.ClientHelloSpec{}, fmt.Errorf("GetSpecFactoryFromJa3String: %s is not a valid Id", quicParameter.Name)
+				}
+
+				fakeVal, err := hex.DecodeString(quicParameter.Data)
+				if err != nil {
+					return tls.ClientHelloSpec{}, fmt.Errorf("GetSpecFactoryFromJa3String: %s is not a valid value", quicParameter.Data)
+				}
+
+				mappedQuicTransportParameters = append(mappedQuicTransportParameters, &tls.FakeQUICTransportParameter{
+					Id:  fakeId,
+					Val: fakeVal,
+				})
+			}
+		}
+
+		return stringToSpec(ja3String,
+			mappedSignatureAlgorithms,
+			mappedDelegatedCredentialsAlgorithms,
+			mappedTlsVersions,
+			mappedKeyShares,
+			mappedHpkeSymmetricCipherSuites,
+			candidatePayloads,
+			supportedProtocolsALPN,
+			supportedProtocolsALPS,
+			mappedCertCompressionAlgorithms,
+			mappedQuicTransportParameters,
+			recordSizeLimit,
+		)
 	}, nil
 }
 
-func stringToSpec(ja3 string, signatureAlgorithms []tls.SignatureScheme, delegatedCredentialsAlgorithms []tls.SignatureScheme, tlsVersions []uint16, keyShares []tls.KeyShare, hpkeSymmetricCipherSuites []tls.HPKESymmetricCipherSuite, candidatePayloads []uint16, supportedProtocolsALPN, supportedProtocolsALPS []string, certCompressionAlgorithms []tls.CertCompressionAlgo, recordSizeLimit uint16) (tls.ClientHelloSpec, error) {
+func stringToSpec(
+	ja3 string,
+	signatureAlgorithms []tls.SignatureScheme,
+	delegatedCredentialsAlgorithms []tls.SignatureScheme,
+	tlsVersions []uint16,
+	keyShares []tls.KeyShare,
+	hpkeSymmetricCipherSuites []tls.HPKESymmetricCipherSuite,
+	candidatePayloads []uint16,
+	supportedProtocolsALPN,
+	supportedProtocolsALPS []string,
+	certCompressionAlgorithms []tls.CertCompressionAlgo,
+	quicParameters tls.TransportParameters,
+	recordSizeLimit uint16,
+) (tls.ClientHelloSpec, error) {
 	extMap := getExtensionBaseMap()
 	ja3StringParts := strings.Split(ja3, ",")
 
@@ -194,6 +273,10 @@ func stringToSpec(ja3 string, signatureAlgorithms []tls.SignatureScheme, delegat
 		Limit: recordSizeLimit,
 	}
 
+	extMap[tls.ExtensionQUICTransportParameters] = &tls.QUICTransportParametersExtension{
+		TransportParameters: quicParameters,
+	}
+
 	var exts []tls.TLSExtension
 	for _, e := range extensions {
 		eId, err := strconv.ParseUint(e, 10, 16)
@@ -209,7 +292,7 @@ func stringToSpec(ja3 string, signatureAlgorithms []tls.SignatureScheme, delegat
 
 		te, ok := extMap[uint16(eId)]
 		if !ok {
-			return tls.ClientHelloSpec{}, fmt.Errorf("unknown extension with id %s provided", e)
+			return tls.ClientHelloSpec{}, fmt.Errorf("stringToSpec: unknown extension with id %s provided", e)
 		}
 		exts = append(exts, te)
 	}

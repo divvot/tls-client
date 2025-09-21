@@ -367,8 +367,7 @@ func (c *httpClient) Do(req *http.Request) (*http.Response, error) {
 		req.Header = c.config.defaultHeaders.Clone()
 	}
 
-	// User should be cared for this
-	// req.Header[http.HeaderOrderKey] = allToLower(req.Header[http.HeaderOrderKey])
+	req.Header[http.HeaderOrderKey] = allToLower(req.Header[http.HeaderOrderKey])
 
 	c.headerLck.Unlock()
 

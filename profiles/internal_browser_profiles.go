@@ -257,7 +257,7 @@ var Chrome_117 = ClientProfile{
 				},
 				Extensions: []tls.TLSExtension{
 					&tls.UtlsGREASEExtension{},
-					&tls.PSKKeyExchangeModesExtension{[]uint8{
+					&tls.PSKKeyExchangeModesExtension{Modes: []uint8{
 						tls.PskModeDHE,
 					}},
 					&tls.SNIExtension{},
@@ -272,7 +272,7 @@ var Chrome_117 = ClientProfile{
 						tls.PSSWithSHA512,
 						tls.PKCS1WithSHA512,
 					}},
-					&tls.SupportedVersionsExtension{[]uint16{
+					&tls.SupportedVersionsExtension{Versions: []uint16{
 						tls.GREASE_PLACEHOLDER,
 						tls.VersionTLS13,
 						tls.VersionTLS12,
@@ -280,7 +280,7 @@ var Chrome_117 = ClientProfile{
 					&tls.ApplicationSettingsExtension{
 						SupportedProtocols: []string{"h2"},
 					},
-					&tls.SupportedCurvesExtension{[]tls.CurveID{
+					&tls.SupportedCurvesExtension{Curves: []tls.CurveID{
 						tls.CurveID(tls.GREASE_PLACEHOLDER),
 						tls.X25519,
 						tls.CurveP256,
@@ -288,12 +288,12 @@ var Chrome_117 = ClientProfile{
 					}},
 					&tls.ExtendedMasterSecretExtension{},
 					&tls.SessionTicketExtension{},
-					&tls.UtlsCompressCertExtension{[]tls.CertCompressionAlgo{
+					&tls.UtlsCompressCertExtension{Algorithms: []tls.CertCompressionAlgo{
 						tls.CertCompressionBrotli,
 					}},
 					&tls.SCTExtension{},
 					&tls.StatusRequestExtension{},
-					&tls.KeyShareExtension{[]tls.KeyShare{
+					&tls.KeyShareExtension{KeyShares: []tls.KeyShare{
 						{Group: tls.CurveID(tls.GREASE_PLACEHOLDER), Data: []byte{0}},
 						{Group: tls.X25519},
 					}},
@@ -359,7 +359,7 @@ var Chrome_124 = ClientProfile{
 				},
 				Extensions: []tls.TLSExtension{
 					&tls.UtlsGREASEExtension{},
-					&tls.UtlsCompressCertExtension{[]tls.CertCompressionAlgo{
+					&tls.UtlsCompressCertExtension{Algorithms: []tls.CertCompressionAlgo{
 						tls.CertCompressionBrotli,
 					}},
 					&tls.SCTExtension{},
@@ -368,7 +368,7 @@ var Chrome_124 = ClientProfile{
 						SupportedProtocols: []string{"h2"},
 					},
 					&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
-					&tls.SupportedVersionsExtension{[]uint16{
+					&tls.SupportedVersionsExtension{Versions: []uint16{
 						tls.GREASE_PLACEHOLDER,
 						tls.VersionTLS13,
 						tls.VersionTLS12,
@@ -388,7 +388,7 @@ var Chrome_124 = ClientProfile{
 					}},
 					&tls.SNIExtension{},
 					&tls.SessionTicketExtension{},
-					&tls.SupportedCurvesExtension{[]tls.CurveID{
+					&tls.SupportedCurvesExtension{Curves: []tls.CurveID{
 						tls.GREASE_PLACEHOLDER,
 						tls.X25519Kyber768Draft00,
 						tls.X25519,
@@ -398,10 +398,10 @@ var Chrome_124 = ClientProfile{
 					tls.BoringGREASEECH(),
 					&tls.StatusRequestExtension{},
 					&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
-					&tls.PSKKeyExchangeModesExtension{[]uint8{
+					&tls.PSKKeyExchangeModesExtension{Modes: []uint8{
 						tls.PskModeDHE,
 					}},
-					&tls.KeyShareExtension{[]tls.KeyShare{
+					&tls.KeyShareExtension{KeyShares: []tls.KeyShare{
 						{Group: tls.CurveID(tls.GREASE_PLACEHOLDER), Data: []byte{0}},
 						{Group: tls.X25519Kyber768Draft00},
 						{Group: tls.X25519},
@@ -464,10 +464,10 @@ var Chrome_120 = ClientProfile{
 				Extensions: []tls.TLSExtension{
 					&tls.UtlsGREASEExtension{},
 					&tls.SNIExtension{},
-					&tls.PSKKeyExchangeModesExtension{[]uint8{
+					&tls.PSKKeyExchangeModesExtension{Modes: []uint8{
 						tls.PskModeDHE,
 					}},
-					&tls.SupportedVersionsExtension{[]uint16{
+					&tls.SupportedVersionsExtension{Versions: []uint16{
 						tls.GREASE_PLACEHOLDER,
 						tls.VersionTLS13,
 						tls.VersionTLS12,
@@ -489,11 +489,11 @@ var Chrome_120 = ClientProfile{
 					&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
 					tls.BoringGREASEECH(),
 					&tls.SCTExtension{},
-					&tls.KeyShareExtension{[]tls.KeyShare{
+					&tls.KeyShareExtension{KeyShares: []tls.KeyShare{
 						{Group: tls.CurveID(tls.GREASE_PLACEHOLDER), Data: []byte{0}},
 						{Group: tls.X25519},
 					}},
-					&tls.SupportedCurvesExtension{[]tls.CurveID{
+					&tls.SupportedCurvesExtension{Curves: []tls.CurveID{
 						tls.GREASE_PLACEHOLDER,
 						tls.X25519,
 						tls.CurveP256,
@@ -505,7 +505,7 @@ var Chrome_120 = ClientProfile{
 					&tls.ApplicationSettingsExtension{
 						SupportedProtocols: []string{"h2"},
 					},
-					&tls.UtlsCompressCertExtension{[]tls.CertCompressionAlgo{
+					&tls.UtlsCompressCertExtension{Algorithms: []tls.CertCompressionAlgo{
 						tls.CertCompressionBrotli,
 					}},
 					&tls.UtlsGREASEExtension{},
@@ -924,7 +924,7 @@ var Safari_IOS_17_0 = ClientProfile{
 					&tls.SNIExtension{},
 					&tls.ExtendedMasterSecretExtension{},
 					&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
-					&tls.SupportedCurvesExtension{[]tls.CurveID{
+					&tls.SupportedCurvesExtension{Curves: []tls.CurveID{
 						tls.GREASE_PLACEHOLDER,
 						tls.X25519,
 						tls.CurveP256,
@@ -950,21 +950,21 @@ var Safari_IOS_17_0 = ClientProfile{
 						tls.PKCS1WithSHA1,
 					}},
 					&tls.SCTExtension{},
-					&tls.KeyShareExtension{[]tls.KeyShare{
+					&tls.KeyShareExtension{KeyShares: []tls.KeyShare{
 						{Group: tls.CurveID(tls.GREASE_PLACEHOLDER), Data: []byte{0}},
 						{Group: tls.X25519},
 					}},
-					&tls.PSKKeyExchangeModesExtension{[]uint8{
+					&tls.PSKKeyExchangeModesExtension{Modes: []uint8{
 						tls.PskModeDHE,
 					}},
-					&tls.SupportedVersionsExtension{[]uint16{
+					&tls.SupportedVersionsExtension{Versions: []uint16{
 						tls.GREASE_PLACEHOLDER,
 						tls.VersionTLS13,
 						tls.VersionTLS12,
 						tls.VersionTLS11,
 						tls.VersionTLS10,
 					}},
-					&tls.UtlsCompressCertExtension{[]tls.CertCompressionAlgo{
+					&tls.UtlsCompressCertExtension{Algorithms: []tls.CertCompressionAlgo{
 						tls.CertCompressionZlib,
 					}},
 					&tls.UtlsGREASEExtension{},
@@ -1031,7 +1031,7 @@ var Safari_IOS_18_5 = ClientProfile{
 					&tls.SNIExtension{},
 					&tls.ExtendedMasterSecretExtension{},
 					&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
-					&tls.SupportedCurvesExtension{[]tls.CurveID{
+					&tls.SupportedCurvesExtension{Curves: []tls.CurveID{
 						tls.GREASE_PLACEHOLDER,
 						tls.X25519,
 						tls.CurveP256,
@@ -1056,21 +1056,21 @@ var Safari_IOS_18_5 = ClientProfile{
 						tls.PKCS1WithSHA1,
 					}},
 					&tls.SCTExtension{},
-					&tls.KeyShareExtension{[]tls.KeyShare{
+					&tls.KeyShareExtension{KeyShares: []tls.KeyShare{
 						{Group: tls.CurveID(tls.GREASE_PLACEHOLDER), Data: []byte{0}},
 						{Group: tls.X25519},
 					}},
-					&tls.PSKKeyExchangeModesExtension{[]uint8{
+					&tls.PSKKeyExchangeModesExtension{Modes: []uint8{
 						tls.PskModeDHE,
 					}},
-					&tls.SupportedVersionsExtension{[]uint16{
+					&tls.SupportedVersionsExtension{Versions: []uint16{
 						tls.GREASE_PLACEHOLDER,
 						tls.VersionTLS13,
 						tls.VersionTLS12,
 						tls.VersionTLS11,
 						tls.VersionTLS10,
 					}},
-					&tls.UtlsCompressCertExtension{[]tls.CertCompressionAlgo{
+					&tls.UtlsCompressCertExtension{Algorithms: []tls.CertCompressionAlgo{
 						tls.CertCompressionZlib,
 					}},
 					&tls.UtlsGREASEExtension{},
@@ -1144,7 +1144,7 @@ var Safari_IOS_18_0 = ClientProfile{
 					&tls.SNIExtension{},
 					&tls.ExtendedMasterSecretExtension{},
 					&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
-					&tls.SupportedCurvesExtension{[]tls.CurveID{
+					&tls.SupportedCurvesExtension{Curves: []tls.CurveID{
 						tls.GREASE_PLACEHOLDER,
 						tls.X25519,
 						tls.CurveP256,
@@ -1170,21 +1170,21 @@ var Safari_IOS_18_0 = ClientProfile{
 						tls.PKCS1WithSHA1,
 					}},
 					&tls.SCTExtension{},
-					&tls.KeyShareExtension{[]tls.KeyShare{
+					&tls.KeyShareExtension{KeyShares: []tls.KeyShare{
 						{Group: tls.CurveID(tls.GREASE_PLACEHOLDER), Data: []byte{0}},
 						{Group: tls.X25519},
 					}},
-					&tls.PSKKeyExchangeModesExtension{[]uint8{
+					&tls.PSKKeyExchangeModesExtension{Modes: []uint8{
 						tls.PskModeDHE,
 					}},
-					&tls.SupportedVersionsExtension{[]uint16{
+					&tls.SupportedVersionsExtension{Versions: []uint16{
 						tls.GREASE_PLACEHOLDER,
 						tls.VersionTLS13,
 						tls.VersionTLS12,
 						tls.VersionTLS11,
 						tls.VersionTLS10,
 					}},
-					&tls.UtlsCompressCertExtension{[]tls.CertCompressionAlgo{
+					&tls.UtlsCompressCertExtension{Algorithms: []tls.CertCompressionAlgo{
 						tls.CertCompressionZlib,
 					}},
 					&tls.UtlsGREASEExtension{},
@@ -1307,7 +1307,7 @@ var Firefox_117 = ClientProfile{
 					&tls.SNIExtension{},
 					&tls.ExtendedMasterSecretExtension{},
 					&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
-					&tls.SupportedCurvesExtension{[]tls.CurveID{
+					&tls.SupportedCurvesExtension{Curves: []tls.CurveID{
 						tls.X25519,
 						tls.CurveP256,
 						tls.CurveP384,
@@ -1330,11 +1330,11 @@ var Firefox_117 = ClientProfile{
 							tls.ECDSAWithSHA1,
 						},
 					},
-					&tls.KeyShareExtension{[]tls.KeyShare{
+					&tls.KeyShareExtension{KeyShares: []tls.KeyShare{
 						{Group: tls.X25519},
 						{Group: tls.CurveP256},
 					}},
-					&tls.SupportedVersionsExtension{[]uint16{
+					&tls.SupportedVersionsExtension{Versions: []uint16{
 						tls.VersionTLS13,
 						tls.VersionTLS12,
 					}},
@@ -1351,10 +1351,10 @@ var Firefox_117 = ClientProfile{
 						tls.ECDSAWithSHA1,
 						tls.PKCS1WithSHA1,
 					}},
-					&tls.PSKKeyExchangeModesExtension{[]uint8{
+					&tls.PSKKeyExchangeModesExtension{Modes: []uint8{
 						tls.PskModeDHE,
 					}},
-					&tls.FakeRecordSizeLimitExtension{0x4001},
+					&tls.FakeRecordSizeLimitExtension{Limit: 0x4001},
 					&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
 				},
 			}, nil

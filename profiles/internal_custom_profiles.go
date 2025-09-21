@@ -163,7 +163,7 @@ func getMMSClientProfile3() ClientProfile {
 						0x0201,
 					}},
 					&tls.SCTExtension{},
-					&tls.KeyShareExtension{[]tls.KeyShare{
+					&tls.KeyShareExtension{KeyShares: []tls.KeyShare{
 						{Group: tls.CurveID(tls.GREASE_PLACEHOLDER), Data: []byte{0}},
 						{Group: tls.X25519},
 					}},
@@ -175,7 +175,7 @@ func getMMSClientProfile3() ClientProfile {
 						tls.VersionTLS13,
 						tls.VersionTLS12,
 					}},
-					&tls.UtlsCompressCertExtension{[]tls.CertCompressionAlgo{
+					&tls.UtlsCompressCertExtension{Algorithms: []tls.CertCompressionAlgo{
 						tls.CertCompressionZlib,
 					}},
 					&tls.UtlsGREASEExtension{},

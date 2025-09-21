@@ -12,7 +12,7 @@ require (
 	golang.org/x/net v0.44.0
 )
 
-replace github.com/refraction-networking/uquic v0.0.6 => github.com/divvot/uquic v0.0.0-20250918043500-f8ea129ddf60
+replace github.com/refraction-networking/uquic v0.0.6 => github.com/divvot/uquic v0.0.0-20250921051436-271c4be94685
 
 replace github.com/bogdanfinn/utls v1.7.4-barnius => github.com/divvot/utls v0.0.0-20250915232647-37e545902b38
 

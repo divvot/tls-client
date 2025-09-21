@@ -6,6 +6,7 @@ import (
 	"time"
 
 	tls_client "github.com/bogdanfinn/tls-client"
+	quic "github.com/refraction-networking/uquic"
 )
 
 type TLSClientError struct {
@@ -51,6 +52,7 @@ type CookiesFromSessionOutput struct {
 type RequestInput struct {
 	CertificatePinningHosts     map[string][]string `json:"certificatePinningHosts"`
 	CustomTlsClient             *CustomTlsClient    `json:"customTlsClient"`
+	CustomQUICClient            *CustomQUICClient   `json:"customQUICClient"`
 	TransportOptions            *TransportOptions   `json:"transportOptions"`
 	Headers                     map[string]string   `json:"headers"`
 	DefaultHeaders              map[string][]string `json:"defaultHeaders"`
@@ -74,6 +76,8 @@ type RequestInput struct {
 	CatchPanics                 bool                `json:"catchPanics"`
 	FollowRedirects             bool                `json:"followRedirects"`
 	ForceHttp1                  bool                `json:"forceHttp1"`
+	ForceHttp3                  bool                `json:"forceHttp3"`
+	UseHttp3After               bool                `json:"useHttp3After"`
 	DisableHttp3                bool                `json:"disableHttp3"`
 	InsecureSkipVerify          bool                `json:"insecureSkipVerify"`
 	IsByteRequest               bool                `json:"isByteRequest"`
@@ -85,6 +89,102 @@ type RequestInput struct {
 	WithDefaultCookieJar        bool                `json:"withDefaultCookieJar"`
 	WithoutCookieJar            bool                `json:"withoutCookieJar"`
 	WithRandomTLSExtensionOrder bool                `json:"withRandomTLSExtensionOrder"`
+}
+
+type QUICTransportParameter struct {
+	Name string `json:"name"`
+
+	// Hex encoded bytes
+	Data string `json:"data"`
+
+	Value uint64 `json:"value"`
+}
+
+type QUICTransportParameters []QUICTransportParameter
+
+func (q QUICTransportParameters) Translate() []tls_client.QUICTransportParameter {
+	var parameters []tls_client.QUICTransportParameter = make([]tls_client.QUICTransportParameter, len(q))
+
+	for i, parameter := range q {
+		parameters[i] = tls_client.QUICTransportParameter(parameter)
+	}
+
+	return parameters
+}
+
+type Frames []map[string]any
+
+func (fs Frames) Translate() (quic.QUICFrames, error) {
+	if len(fs) == 0 {
+		return quic.QUICFrames{}, nil
+	}
+
+	var frames quic.QUICFrames = quic.QUICFrames{quic.QUICFrameCrypto{
+		Offset: 0,
+		Length: 0,
+	}}
+
+	for _, f := range fs {
+		typ := f["type"]
+
+		switch typ {
+		case "padding":
+			untilLengthA, ok := f["untilLength"]
+			if ok {
+				untilLength, ok := untilLengthA.(int)
+				if !ok {
+					return quic.QUICFrames{}, fmt.Errorf("Frames: Translate: invalid field value for `untilLength`")
+				}
+
+				frames = append(frames, quic.QUICFramePadding{
+					UntilLength: untilLength,
+				})
+			}
+
+			lengthA, ok := f["length"]
+			if ok {
+				length, ok := lengthA.(int)
+				if !ok {
+					return quic.QUICFrames{}, fmt.Errorf("Frames: Translate: invalid field value for `length`")
+				}
+
+				frames = append(frames, quic.QUICFramePadding{
+					Length: length,
+				})
+			}
+			// TODO: Add more frames
+		}
+	}
+
+	return frames, nil
+}
+
+type CustomQUICClient struct {
+	SrcConnIDLength        int    `json:"srcConnIDLength"`
+	DestConnIDLength       int    `json:"destConnIDLength"`
+	InitPacketNumberLength int    `json:"initPacketNumberLength"`
+	InitPacketNumber       uint64 `json:"initPacketNumber"`
+	ClientTokenLength      int    `json:"clientTokenLength"`
+	RandomInitPacketNumber bool   `json:"randomInitPacketNumber"`
+
+	UDPDatagramMinSize int `json:"udpDatagramMinSize"`
+
+	Frames Frames `json:"frames"`
+
+	JA3String                               string   `json:"ja3String"`
+	SupportedVersions                       []string `json:"supportedVersions"`
+	ALPNProtocols                           []string `json:"alpnProtocols"`
+	ALPSProtocols                           []string `json:"alpsProtocols"`
+	KeyShareCurves                          []string `json:"keyShareCurves"`
+	CertCompressionAlgos                    []string `json:"certCompressionAlgos"`
+	SupportedSignatureAlgorithms            []string `json:"supportedSignatureAlgorithms"`
+	SupportedDelegatedCredentialsAlgorithms []string `json:"supportedDelegatedCredentialsAlgorithms"`
+	RecordSizeLimit                         uint16   `json:"recordSizeLimit"`
+
+	ECHCandidateCipherSuites CandidateCipherSuites `json:"ECHCandidateCipherSuites"`
+	ECHCandidatePayloads     []uint16              `json:"ECHCandidatePayloads"`
+
+	QUICTransportParameters QUICTransportParameters `json:"quicTransportParameters"`
 }
 
 // CustomTlsClient contains custom TLS specifications to construct a client from.

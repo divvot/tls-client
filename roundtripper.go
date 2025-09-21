@@ -116,7 +116,7 @@ func (rt *roundTripper) getTransport(req *http.Request, addr string) error {
 		return nil
 	case "https":
 	default:
-		return fmt.Errorf("invalid URL scheme: [%v]", req.URL.Scheme)
+		return fmt.Errorf("getTransport: invalid URL scheme: [%v]", req.URL.Scheme)
 	}
 
 	if rt.forceHttp3 {
@@ -129,7 +129,7 @@ func (rt *roundTripper) getTransport(req *http.Request, addr string) error {
 	case errProtocolNegotiated:
 	case nil:
 		// Should never happen.
-		panic("dialTLS returned no error when determining cachedTransports")
+		panic("getTransport: dialTLS returned no error when determining cachedTransports")
 	default:
 		return err
 	}
@@ -466,7 +466,7 @@ var newRoundTripper = func(
 ) (http.RoundTripper, error) {
 	pinner, err := NewCertificatePinner(certificatePins)
 	if err != nil {
-		return nil, fmt.Errorf("can not instantiate certificate pinner: %w", err)
+		return nil, fmt.Errorf("newRoundTripper: can not instantiate certificate pinner: %w", err)
 	}
 
 	var clientSessionCache tls.ClientSessionCache

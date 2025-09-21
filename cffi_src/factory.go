@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/bogdanfinn/tls-client/profiles"
+	quic "github.com/refraction-networking/uquic"
 
 	http "github.com/bogdanfinn/fhttp"
 	"github.com/bogdanfinn/fhttp/cookiejar"
@@ -56,7 +57,7 @@ func GetClient(sessionId string) (tls_client.HttpClient, error) {
 	client, ok := clients[sessionId]
 
 	if !ok {
-		return nil, fmt.Errorf("no client found for sessionId: %s", sessionId)
+		return nil, fmt.Errorf("GetClient: no client found for sessionId: %s", sessionId)
 	}
 
 	return client, nil
@@ -77,20 +78,20 @@ func CreateClient(requestInput RequestInput) (client tls_client.HttpClient, sess
 	}
 
 	if requestInput.TLSClientIdentifier != "" && requestInput.CustomTlsClient != nil {
-		clientErr := NewTLSClientError(fmt.Errorf("cannot build client out of client identifier and custom tls client information. Please provide only one of them"))
+		clientErr := NewTLSClientError(fmt.Errorf("CreateClient: cannot build client out of client identifier and custom tls client information. Please provide only one of them"))
 
 		return nil, newSessionId, useSession, clientErr
 	}
 
 	if requestInput.TimeoutSeconds != 0 && requestInput.TimeoutMilliseconds != 0 {
-		clientErr := NewTLSClientError(fmt.Errorf("cannot build client with both defined timeout in seconds and timeout in milliseconds. Please provide only one of them"))
+		clientErr := NewTLSClientError(fmt.Errorf("CreateClient: cannot build client with both defined timeout in seconds and timeout in milliseconds. Please provide only one of them"))
 
 		return nil, newSessionId, useSession, clientErr
 	}
 
 	tlsClient, err := getTlsClient(requestInput, newSessionId, useSession)
 	if err != nil {
-		clientErr := NewTLSClientError(fmt.Errorf("failed to build client out of request input: %w", err))
+		clientErr := NewTLSClientError(fmt.Errorf("CreateClient: failed to build client out of request input: %w", err))
 
 		return nil, newSessionId, useSession, clientErr
 	}
@@ -104,7 +105,7 @@ func BuildRequest(input RequestInput) (*http.Request, *TLSClientError) {
 	var err error
 
 	if input.RequestMethod == "" || input.RequestUrl == "" {
-		return nil, NewTLSClientError(fmt.Errorf("no request url or request method provided"))
+		return nil, NewTLSClientError(fmt.Errorf("BuildRequest: no request url or request method provided"))
 	}
 
 	if input.RequestBody != nil && *input.RequestBody != "" {
@@ -113,7 +114,7 @@ func BuildRequest(input RequestInput) (*http.Request, *TLSClientError) {
 			requestBodyString, err = base64.StdEncoding.DecodeString(*input.RequestBody)
 
 			if err != nil {
-				return nil, NewTLSClientError(fmt.Errorf("failed to base64 decode request body: %w", err))
+				return nil, NewTLSClientError(fmt.Errorf("BuildRequest: failed to base64 decode request body: %w", err))
 			}
 		}
 
@@ -128,7 +129,7 @@ func BuildRequest(input RequestInput) (*http.Request, *TLSClientError) {
 	}
 
 	if err != nil {
-		return nil, NewTLSClientError(fmt.Errorf("failed to create request object: %w", err))
+		return nil, NewTLSClientError(fmt.Errorf("BuildRequest: failed to create request object: %w", err))
 	}
 
 	headers := http.Header{}
@@ -266,7 +267,7 @@ func getTlsClient(requestInput RequestInput, sessionId string, withSession bool)
 	if ok && withSession {
 		modifiedClient, changed, err := handleModification(client, proxyUrl, requestInput.FollowRedirects, requestInput.IsRotatingProxy)
 		if err != nil {
-			return nil, fmt.Errorf("failed to modify existing client: %w", err)
+			return nil, fmt.Errorf("getTlsClient: failed to modify existing client: %w", err)
 		}
 
 		if changed {
@@ -279,16 +280,37 @@ func getTlsClient(requestInput RequestInput, sessionId string, withSession bool)
 	clientProfile := profiles.DefaultClientProfile
 
 	if requestInput.CustomTlsClient != nil {
-		clientHelloId, h2Settings, h2SettingsOrder, pseudoHeaderOrder, connectionFlow, priorityFrames, headerPriority, err := getCustomTlsClientProfile(requestInput.CustomTlsClient)
+		clientHelloId,
+			h2Settings,
+			h2SettingsOrder,
+			pseudoHeaderOrder,
+			connectionFlow,
+			priorityFrames,
+			headerPriority, err := getCustomTlsClientProfile(requestInput.CustomTlsClient)
 		if err != nil {
-			return nil, fmt.Errorf("can not build http client out of custom tls client information: %w", err)
+			return nil, fmt.Errorf("getTlsClient: can not build http client out of custom tls client information: %w", err)
 		}
 
-		clientProfile = profiles.NewClientProfile(clientHelloId, h2Settings, h2SettingsOrder, pseudoHeaderOrder, connectionFlow, priorityFrames, headerPriority)
+		clientProfile = profiles.NewClientProfile(clientHelloId,
+			h2Settings,
+			h2SettingsOrder,
+			pseudoHeaderOrder,
+			connectionFlow,
+			priorityFrames,
+			headerPriority)
 	}
 
 	if tlsClientIdentifier != "" {
 		clientProfile = getTlsClientProfile(tlsClientIdentifier)
+	}
+
+	if requestInput.CustomQUICClient != nil {
+		quicSpec, err := getCustomQUICSpec(requestInput.CustomQUICClient)
+		if err != nil {
+			return nil, fmt.Errorf("getTlsClient: %w", err)
+		}
+
+		clientProfile.SetQUICSpec(quicSpec)
 	}
 
 	timeoutOption := tls_client.WithTimeoutSeconds(tls_client.DefaultTimeoutSeconds)
@@ -312,6 +334,14 @@ func getTlsClient(requestInput RequestInput, sessionId string, withSession bool)
 
 	if requestInput.ForceHttp1 {
 		options = append(options, tls_client.WithForceHttp1())
+	}
+
+	if requestInput.ForceHttp3 {
+		options = append(options, tls_client.WithForceHttp3())
+	}
+
+	if requestInput.UseHttp3After {
+		options = append(options, tls_client.WithUseHttp3After())
 	}
 
 	if requestInput.DisableHttp3 {
@@ -346,7 +376,7 @@ func getTlsClient(requestInput RequestInput, sessionId string, withSession bool)
 	if requestInput.LocalAddress != nil {
 		localAddr, err := net.ResolveTCPAddr("", *requestInput.LocalAddress)
 		if err != nil {
-			return nil, fmt.Errorf("failed to resolve tcp address from local %s address: %w", *requestInput.LocalAddress, err)
+			return nil, fmt.Errorf("getTlsClient: failed to resolve tcp address from local %s address: %w", *requestInput.LocalAddress, err)
 		}
 
 		options = append(options, tls_client.WithLocalAddr(*localAddr))
@@ -388,11 +418,11 @@ func getTlsClient(requestInput RequestInput, sessionId string, withSession bool)
 		options = append(options, tls_client.WithInsecureSkipVerify())
 	}
 
-	if requestInput.DefaultHeaders != nil && len(requestInput.DefaultHeaders) != 0 {
+	if len(requestInput.DefaultHeaders) != 0 {
 		options = append(options, tls_client.WithDefaultHeaders(requestInput.DefaultHeaders))
 	}
 
-	if requestInput.ConnectHeaders != nil && len(requestInput.ConnectHeaders) != 0 {
+	if len(requestInput.ConnectHeaders) != 0 {
 		options = append(options, tls_client.WithConnectHeaders(requestInput.ConnectHeaders))
 	}
 
@@ -415,8 +445,62 @@ func getTlsClient(requestInput RequestInput, sessionId string, withSession bool)
 	return tlsClient, err
 }
 
+func getCustomQUICSpec(customClientDefinition *CustomQUICClient) (quic.QUICSpec, error) {
+	specFactory, err := tls_client.GetSpecFactoryFromJa3String(customClientDefinition.JA3String,
+		customClientDefinition.SupportedSignatureAlgorithms,
+		customClientDefinition.SupportedDelegatedCredentialsAlgorithms,
+		customClientDefinition.SupportedVersions,
+		customClientDefinition.KeyShareCurves,
+		customClientDefinition.ALPNProtocols,
+		customClientDefinition.ALPSProtocols,
+		customClientDefinition.ECHCandidateCipherSuites.Translate(),
+		customClientDefinition.ECHCandidatePayloads,
+		customClientDefinition.CertCompressionAlgos,
+		customClientDefinition.QUICTransportParameters.Translate(),
+		customClientDefinition.RecordSizeLimit)
+
+	if err != nil {
+		return quic.QUICSpec{}, err
+	}
+
+	spec, err := specFactory()
+	if err != nil {
+		return quic.QUICSpec{}, err
+	}
+
+	frames, err := customClientDefinition.Frames.Translate()
+	if err != nil {
+		return quic.QUICSpec{}, err
+	}
+
+	return quic.QUICSpec{
+		InitialPacketSpec: quic.InitialPacketSpec{
+			SrcConnIDLength:        customClientDefinition.SrcConnIDLength,
+			DestConnIDLength:       customClientDefinition.DestConnIDLength,
+			ClientTokenLength:      customClientDefinition.ClientTokenLength,
+			InitPacketNumberLength: quic.PacketNumberLen(customClientDefinition.InitPacketNumberLength),
+			InitPacketNumber:       customClientDefinition.InitPacketNumber,
+			RandomInitPacketNumber: customClientDefinition.RandomInitPacketNumber,
+			FrameBuilder:           frames,
+		},
+		ClientHelloSpec:    &spec,
+		UDPDatagramMinSize: customClientDefinition.UDPDatagramMinSize,
+	}, nil
+}
+
 func getCustomTlsClientProfile(customClientDefinition *CustomTlsClient) (tls.ClientHelloID, map[http2.SettingID]uint32, []http2.SettingID, []string, uint32, []http2.Priority, *http2.PriorityParam, error) {
-	specFactory, err := tls_client.GetSpecFactoryFromJa3String(customClientDefinition.Ja3String, customClientDefinition.SupportedSignatureAlgorithms, customClientDefinition.SupportedDelegatedCredentialsAlgorithms, customClientDefinition.SupportedVersions, customClientDefinition.KeyShareCurves, customClientDefinition.ALPNProtocols, customClientDefinition.ALPSProtocols, customClientDefinition.ECHCandidateCipherSuites.Translate(), customClientDefinition.ECHCandidatePayloads, customClientDefinition.CertCompressionAlgos, customClientDefinition.RecordSizeLimit)
+	specFactory, err := tls_client.GetSpecFactoryFromJa3String(customClientDefinition.Ja3String,
+		customClientDefinition.SupportedSignatureAlgorithms,
+		customClientDefinition.SupportedDelegatedCredentialsAlgorithms,
+		customClientDefinition.SupportedVersions,
+		customClientDefinition.KeyShareCurves,
+		customClientDefinition.ALPNProtocols,
+		customClientDefinition.ALPSProtocols,
+		customClientDefinition.ECHCandidateCipherSuites.Translate(),
+		customClientDefinition.ECHCandidatePayloads,
+		customClientDefinition.CertCompressionAlgos,
+		[]tls_client.QUICTransportParameter{},
+		customClientDefinition.RecordSizeLimit)
 	if err != nil {
 		return tls.ClientHelloID{}, nil, nil, nil, 0, nil, nil, err
 	}
@@ -490,14 +574,14 @@ func handleModification(client tls_client.HttpClient, proxyUrl *string, followRe
 	changed := false
 
 	if client == nil {
-		return client, false, fmt.Errorf("no tls client for modification check")
+		return client, false, fmt.Errorf("handleModification: no tls client for modification check")
 	}
 
 	if proxyUrl != nil {
 		if client.GetProxy() != *proxyUrl || isRotatingProxy {
 			err := client.SetProxy(*proxyUrl)
 			if err != nil {
-				return nil, false, fmt.Errorf("failed to change proxy url of client: %w", err)
+				return nil, false, fmt.Errorf("handleModification: failed to change proxy url of client: %w", err)
 			}
 
 			changed = true

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"net/url"
 	"os"
@@ -102,7 +103,7 @@ func newConnectDialer(proxyUrlStr string, timeout time.Duration, localAddr *net.
 	}
 
 	if proxyUrl.Host == "" {
-		return nil, errors.New("invalid url `" + proxyUrlStr +
+		return nil, errors.New("newConnectDialer: invalid url `" + proxyUrlStr +
 			"`, make sure to specify full url like https://username:password@hostname.com:443/")
 	}
 
@@ -124,9 +125,9 @@ func newConnectDialer(proxyUrlStr string, timeout time.Duration, localAddr *net.
 	case "socks5", "socks5h":
 		return handleSocks5ProxyDialer(proxyUrl, _dialer)
 	case "":
-		return nil, errors.New("specify scheme explicitly (https://)")
+		return nil, errors.New("newConnectDialer: specify scheme explicitly (https://)")
 	default:
-		return nil, errors.New("scheme " + proxyUrl.Scheme + " is not supported")
+		return nil, errors.New("newConnectDialer: scheme " + proxyUrl.Scheme + " is not supported")
 	}
 
 	dialer := &connectDialer{
@@ -164,7 +165,7 @@ func handleSocks5ProxyDialer(proxyUrl *url.URL, dialer net.Dialer) (proxy.Contex
 
 	socksDialer, err := proxy.SOCKS5("tcp", proxyUrl.Host, proxyAuth, &dialer)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create socks5 proxy: %w", err)
+		return nil, fmt.Errorf("handleSocks5ProxyDialer: failed to create socks5 proxy: %w", err)
 	}
 
 	scd := newSocksContextDialer(socksDialer)
@@ -189,14 +190,10 @@ func (c *connectDialer) DialContext(ctx context.Context, network, address string
 		Host:   address,
 	}).WithContext(ctx)
 
-	for k, v := range c.DefaultHeader {
-		req.Header[k] = v
-	}
+	maps.Copy(req.Header, c.DefaultHeader)
 
 	if ctxHeader, ctxHasHeader := ctx.Value(ContextKeyHeader{}).(http.Header); ctxHasHeader {
-		for k, v := range ctxHeader {
-			req.Header[k] = v
-		}
+		maps.Copy(req.Header, ctxHeader)
 	}
 
 	connectHttp2 := func(rawConn net.Conn, h2clientConn *http2.ClientConn) (net.Conn, error) {
@@ -214,7 +211,7 @@ func (c *connectDialer) DialContext(ctx context.Context, network, address string
 
 		if resp.StatusCode != http.StatusOK {
 			_ = rawConn.Close()
-			return nil, errors.New("Proxy responded with non 200 code: " + resp.Status)
+			return nil, errors.New("connectHttp2: Proxy responded with non 200 code: " + resp.Status)
 		}
 
 		return newHttp2Conn(rawConn, pw, resp.Body), nil
@@ -235,7 +232,7 @@ func (c *connectDialer) DialContext(ctx context.Context, network, address string
 		err = req.Write(rawConn)
 		if err != nil {
 			if errors.Is(err, os.ErrDeadlineExceeded) {
-				c.logger.Error("deadline exceeded while trying to write proxy connection")
+				c.logger.Error("connectHttp1: deadline exceeded while trying to write proxy connection")
 			}
 
 			_ = rawConn.Close()
@@ -245,7 +242,7 @@ func (c *connectDialer) DialContext(ctx context.Context, network, address string
 		resp, err := http.ReadResponse(bufio.NewReader(rawConn), req)
 		if err != nil {
 			if errors.Is(err, os.ErrDeadlineExceeded) {
-				c.logger.Error("deadline exceeded while trying to read proxy connection")
+				c.logger.Error("connectHttp1: deadline exceeded while trying to read proxy connection")
 			}
 
 			_ = rawConn.Close()
@@ -254,7 +251,7 @@ func (c *connectDialer) DialContext(ctx context.Context, network, address string
 
 		if resp.StatusCode != http.StatusOK {
 			_ = rawConn.Close()
-			return nil, errors.New("Proxy responded with non 200 code: " + resp.Status)
+			return nil, errors.New("connectHttp1: Proxy responded with non 200 code: " + resp.Status)
 		}
 
 		rawConn.SetDeadline(time.Time{})
@@ -317,7 +314,7 @@ func (c *connectDialer) DialContext(ctx context.Context, network, address string
 			rawConn = tlsConn
 		}
 	default:
-		return nil, errors.New("scheme " + c.ProxyUrl.Scheme + " is not supported")
+		return nil, errors.New("DialContext: scheme " + c.ProxyUrl.Scheme + " is not supported")
 	}
 
 	switch negotiatedProtocol {
@@ -348,7 +345,7 @@ func (c *connectDialer) DialContext(ctx context.Context, network, address string
 		return proxyConn, err
 	default:
 		_ = rawConn.Close()
-		return nil, errors.New("negotiated unsupported application layer protocol: " +
+		return nil, errors.New("DialContext: negotiated unsupported application layer protocol: " +
 			negotiatedProtocol)
 	}
 }

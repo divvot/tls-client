@@ -757,7 +757,7 @@ var Firefox_123 = ClientProfile{
 					&tls.SNIExtension{},
 					&tls.ExtendedMasterSecretExtension{},
 					&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
-					&tls.SupportedCurvesExtension{[]tls.CurveID{
+					&tls.SupportedCurvesExtension{Curves: []tls.CurveID{
 						tls.X25519,
 						tls.CurveP256,
 						tls.CurveP384,
@@ -780,11 +780,11 @@ var Firefox_123 = ClientProfile{
 							tls.ECDSAWithSHA1,
 						},
 					},
-					&tls.KeyShareExtension{[]tls.KeyShare{
+					&tls.KeyShareExtension{KeyShares: []tls.KeyShare{
 						{Group: tls.X25519},
 						{Group: tls.CurveP256},
 					}},
-					&tls.SupportedVersionsExtension{[]uint16{
+					&tls.SupportedVersionsExtension{Versions: []uint16{
 						tls.VersionTLS13,
 						tls.VersionTLS12,
 					}},
@@ -801,10 +801,10 @@ var Firefox_123 = ClientProfile{
 						tls.ECDSAWithSHA1,
 						tls.PKCS1WithSHA1,
 					}},
-					&tls.PSKKeyExchangeModesExtension{[]uint8{
+					&tls.PSKKeyExchangeModesExtension{Modes: []uint8{
 						tls.PskModeDHE,
 					}},
-					&tls.FakeRecordSizeLimitExtension{0x4001},
+					&tls.FakeRecordSizeLimitExtension{Limit: 0x4001},
 					tls.BoringGREASEECH(),
 				}}, nil
 		},
@@ -899,7 +899,7 @@ var Firefox_120 = ClientProfile{
 					&tls.SNIExtension{},
 					&tls.ExtendedMasterSecretExtension{},
 					&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
-					&tls.SupportedCurvesExtension{[]tls.CurveID{
+					&tls.SupportedCurvesExtension{Curves: []tls.CurveID{
 						tls.X25519,
 						tls.CurveP256,
 						tls.CurveP384,
@@ -921,11 +921,11 @@ var Firefox_120 = ClientProfile{
 							tls.ECDSAWithSHA1,
 						},
 					},
-					&tls.KeyShareExtension{[]tls.KeyShare{
+					&tls.KeyShareExtension{KeyShares: []tls.KeyShare{
 						{Group: tls.X25519},
 						{Group: tls.CurveP256},
 					}},
-					&tls.SupportedVersionsExtension{[]uint16{
+					&tls.SupportedVersionsExtension{Versions: []uint16{
 						tls.VersionTLS13,
 						tls.VersionTLS12,
 					}},
@@ -942,7 +942,7 @@ var Firefox_120 = ClientProfile{
 						tls.ECDSAWithSHA1,
 						tls.PKCS1WithSHA1,
 					}},
-					&tls.FakeRecordSizeLimitExtension{0x4001},
+					&tls.FakeRecordSizeLimitExtension{Limit: 0x4001},
 					tls.BoringGREASEECH(),
 				}}, nil
 		},

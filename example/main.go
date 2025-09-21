@@ -555,7 +555,7 @@ func rotateProxiesOnClient() {
 		return
 	}
 
-	log.Println(fmt.Sprintf("requesting tls.peet.ws with proxy 1 => ip: %s", tlsApiResponse.IP))
+	log.Printf("requesting tls.peet.ws with proxy 1 => ip: %s", tlsApiResponse.IP)
 
 	// you need to put in here a valid proxy to make the example work
 	err = client.SetProxy("http://user:pass@host:port")
@@ -584,7 +584,7 @@ func rotateProxiesOnClient() {
 		return
 	}
 
-	log.Println(fmt.Sprintf("requesting tls.peet.ws with proxy 2 => ip: %s", tlsApiResponse.IP))
+	log.Printf("requesting tls.peet.ws with proxy 2 => ip: %s", tlsApiResponse.IP)
 }
 
 func requestWithCustomClient() {
@@ -807,7 +807,23 @@ func requestWithJa3CustomClientWithTwoGreaseExtensions() {
 	candidatePayloads := []uint16{128, 160, 192, 224}
 	certCompressionAlgos := []string{"brotli"}
 
-	specFactory, err := tls_client.GetSpecFactoryFromJa3String(ja3String, supportedSignatureAlgorithms, supportedDelegatedCredentialsAlgorithms, supportedVersions, keyShareCurves, supportedProtocolsALPN, supportedProtocolsALPS, echCandidateCipherSuites, candidatePayloads, certCompressionAlgos, 0)
+	specFactory, err := tls_client.GetSpecFactoryFromJa3String(
+		ja3String, supportedSignatureAlgorithms,
+		supportedDelegatedCredentialsAlgorithms,
+		supportedVersions,
+		keyShareCurves,
+		supportedProtocolsALPN,
+		supportedProtocolsALPS,
+		echCandidateCipherSuites,
+		candidatePayloads,
+		certCompressionAlgos,
+		nil,
+		0)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
 	customClientProfile := profiles.NewClientProfile(tls.ClientHelloID{
 		Client:      "MyCustomProfile",
@@ -901,17 +917,17 @@ func testPskExtension() {
 			},
 			Extensions: []tls.TLSExtension{
 				&tls.UtlsGREASEExtension{},
-				&tls.PSKKeyExchangeModesExtension{[]uint8{
+				&tls.PSKKeyExchangeModesExtension{Modes: []uint8{
 					tls.PskModeDHE,
 				}},
-				&tls.KeyShareExtension{[]tls.KeyShare{
+				&tls.KeyShareExtension{KeyShares: []tls.KeyShare{
 					{Group: tls.CurveID(tls.GREASE_PLACEHOLDER), Data: []byte{0}},
 					{Group: tls.X25519},
 				}},
 				&tls.ApplicationSettingsExtension{
 					SupportedProtocols: []string{"h2"},
 				},
-				&tls.SupportedVersionsExtension{[]uint16{
+				&tls.SupportedVersionsExtension{Versions: []uint16{
 					tls.GREASE_PLACEHOLDER,
 					tls.VersionTLS13,
 					tls.VersionTLS12,
@@ -923,14 +939,14 @@ func testPskExtension() {
 				&tls.StatusRequestExtension{},
 				&tls.ExtendedMasterSecretExtension{},
 				&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
-				&tls.SupportedCurvesExtension{[]tls.CurveID{
+				&tls.SupportedCurvesExtension{Curves: []tls.CurveID{
 					tls.CurveID(tls.GREASE_PLACEHOLDER),
 					tls.X25519,
 					tls.CurveP256,
 					tls.CurveP384,
 				}},
 				&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
-				&tls.UtlsCompressCertExtension{[]tls.CertCompressionAlgo{
+				&tls.UtlsCompressCertExtension{Algorithms: []tls.CertCompressionAlgo{
 					tls.CertCompressionBrotli,
 				}},
 				&tls.SCTExtension{},

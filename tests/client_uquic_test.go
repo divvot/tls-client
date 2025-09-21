@@ -9,7 +9,7 @@ import (
 )
 
 func TestHttp3Options(t *testing.T) {
-	spec := profiles.InstagramQuicIOS
+	spec := profiles.InstagramIOS
 
 	options := []tls_client.HttpClientOption{
 		tls_client.WithClientProfile(spec),
@@ -19,7 +19,7 @@ func TestHttp3Options(t *testing.T) {
 
 	tlsClient, _ := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
 
-	resp, err := tlsClient.Get("https://http3.is/")
+	resp, err := tlsClient.Get("https://i.instagram.com/actions/")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func TestHttp3Options(t *testing.T) {
 
 	t.Logf("Response: %s", string(respBody))
 
-	resp, err = tlsClient.Get("https://http3.is/")
+	resp, err = tlsClient.Get("https://i.instagram.com/actions/")
 	if err != nil {
 		t.Fatal(err)
 	}
