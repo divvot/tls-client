@@ -58,8 +58,7 @@ type roundTripper struct {
 	disableIPV6                 bool
 	disableIPV4                 bool
 
-	useHttp3After bool
-	forceHttp3    bool
+	forceHttp3 bool
 }
 
 func (rt *roundTripper) CloseIdleConnections() {
@@ -92,15 +91,6 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			}
 
 			return nil, err
-		}
-	}
-
-	if rt.useHttp3After {
-		if t, ok := rt.cachedTransports[addr]; ok {
-			rt.cachedTransports[addr] = rt.buildHttp3Transport()
-			rt.useHttp3After = false
-
-			return t.RoundTrip(req)
 		}
 	}
 
@@ -455,7 +445,6 @@ var newRoundTripper = func(
 	withRandomTlsExtensionOrder bool,
 	forceHttp1 bool,
 	forceHttp3 bool,
-	useHttp3After bool,
 	disableHttp3 bool,
 	certificatePins map[string][]string,
 	badPinHandlerFunc BadPinHandlerFunc,
@@ -501,9 +490,8 @@ var newRoundTripper = func(
 		disableIPV4:                 disableIPV4,
 		bandwidthTracker:            bandwidthTracker,
 
-		useHttp3After: useHttp3After,
-		forceHttp3:    forceHttp3,
-		quicSpec:      clientProfile.GetQUICSpec(),
+		forceHttp3: forceHttp3,
+		quicSpec:   clientProfile.GetQUICSpec(),
 	}
 
 	if len(dialer) > 0 {

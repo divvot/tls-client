@@ -64,9 +64,8 @@ type httpClientConfig struct {
 	withRandomTlsExtensionOrder bool
 	forceHttp1                  bool
 
-	forceHttp3    bool
-	useHttp3After bool
-	disableHttp3  bool
+	forceHttp3   bool
+	disableHttp3 bool
 
 	// Establish a connection to origin server via ipv4 only
 	disableIPV6 bool
@@ -246,13 +245,6 @@ func WithDisableHttp3() HttpClientOption {
 func WithForceHttp3() HttpClientOption {
 	return func(config *httpClientConfig) {
 		config.forceHttp3 = true
-	}
-}
-
-// WithUseHttp3After configures a client to use HTTP/3 after the first successful HTTP/2 request
-func WithUseHttp3After() HttpClientOption {
-	return func(config *httpClientConfig) {
-		config.useHttp3After = true
 	}
 }
 

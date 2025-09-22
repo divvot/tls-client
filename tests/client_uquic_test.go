@@ -13,8 +13,6 @@ func TestHttp3Options(t *testing.T) {
 
 	options := []tls_client.HttpClientOption{
 		tls_client.WithClientProfile(spec),
-		tls_client.WithUseHttp3After(),
-		//tls_client.WithForceHttp3(),
 	}
 
 	tlsClient, _ := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)

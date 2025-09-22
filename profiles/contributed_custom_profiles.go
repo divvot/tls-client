@@ -1716,17 +1716,19 @@ var InstagramIOS = ClientProfile{
 	},
 
 	settings: map[http2.SettingID]uint32{
-		http2.SettingInitialWindowSize: 16777216,
+		http2.SettingInitialWindowSize:    2097152,
+		http2.SettingMaxConcurrentStreams: 100,
 	},
 	settingsOrder: []http2.SettingID{
 		http2.SettingInitialWindowSize,
+		http2.SettingMaxConcurrentStreams,
 	},
 	headerPriority: &http2.PriorityParam{},
 	pseudoHeaderOrder: []string{
+		":authority",
 		":method",
 		":path",
-		":authority",
 		":scheme",
 	},
-	connectionFlow: 16711681,
+	connectionFlow: 10485760,
 }

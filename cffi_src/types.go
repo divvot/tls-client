@@ -77,7 +77,6 @@ type RequestInput struct {
 	FollowRedirects             bool                `json:"followRedirects"`
 	ForceHttp1                  bool                `json:"forceHttp1"`
 	ForceHttp3                  bool                `json:"forceHttp3"`
-	UseHttp3After               bool                `json:"useHttp3After"`
 	DisableHttp3                bool                `json:"disableHttp3"`
 	InsecureSkipVerify          bool                `json:"insecureSkipVerify"`
 	IsByteRequest               bool                `json:"isByteRequest"`
