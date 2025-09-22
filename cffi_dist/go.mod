@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 )
 
-replace github.com/bogdanfinn/tls-client v1.11.2 => github.com/divvot/tls-client v1.11.2-1
+replace github.com/bogdanfinn/tls-client v1.11.2 => github.com/divvot/tls-client v1.11.2-2
 
 require (
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
@@ -39,6 +39,6 @@ require (
 
 // replace github.com/bogdanfinn/tls-client => ../
 
-replace github.com/refraction-networking/uquic v0.0.6 => github.com/divvot/uquic v0.0.0-20250921051436-271c4be94685
+replace github.com/refraction-networking/uquic v0.0.6 => github.com/divvot/uquic v0.0.6
 
 replace github.com/bogdanfinn/utls v1.7.4-barnius => github.com/divvot/utls v0.0.0-20250915232647-37e545902b38

@@ -8,10 +8,10 @@ github.com/cloudflare/circl v1.6.1 h1:zqIqSPIndyBh1bjLVVDHMPpVKqp8Su/V+6MeDzzQBQ
 github.com/cloudflare/circl v1.6.1/go.mod h1:uddAzsPgqdMAYatqJ0lsjX1oECcQLIlRpzZh3pJrofs=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/divvot/tls-client v1.11.2-1 h1:JH+42u4p2y5vIwapeDnjoB3HbiBbDJ/dzDWM7yqD6Kw=
-github.com/divvot/tls-client v1.11.2-1/go.mod h1:1CcIM6awj69EerhTlNKVV1UCJCECzpqaHuiRE1YzCls=
-github.com/divvot/uquic v0.0.0-20250921051436-271c4be94685 h1:ckBuiExnTeuZxsGU2+0Cb6M2HiujALdNSK4zgWAzooc=
-github.com/divvot/uquic v0.0.0-20250921051436-271c4be94685/go.mod h1:lkN2klFMdULfGny8+DPgMGARAtdVLMcre9DRWHwRN6w=
+github.com/divvot/tls-client v1.11.2-2 h1:32fZ7aHfn3IuHzUngCHM+aBjCEdsQ0lQQTk5bFzPmSg=
+github.com/divvot/tls-client v1.11.2-2/go.mod h1:1CcIM6awj69EerhTlNKVV1UCJCECzpqaHuiRE1YzCls=
+github.com/divvot/uquic v0.0.6 h1:KNA08f8z8Ft5s9peKNl1Kh8ME/KR7NFNmXrLIWee0dE=
+github.com/divvot/uquic v0.0.6/go.mod h1:lkN2klFMdULfGny8+DPgMGARAtdVLMcre9DRWHwRN6w=
 github.com/divvot/utls v0.0.0-20250915232647-37e545902b38 h1:QV7JZtYe9tDzqJ0zszuA0aZfHCZJ+X6mf4gV31Kociw=
 github.com/divvot/utls v0.0.0-20250915232647-37e545902b38/go.mod h1:SUn0CoHGVp/akGNuaqh99yvovu64PCP2LbWd3Z/Laic=
 github.com/go-logr/logr v1.4.3 h1:CjnDlHq8ikf6E492q6eKboGOC0T8CDaOvkHCIg8idEI=
