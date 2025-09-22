@@ -84,8 +84,6 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	if _, ok := rt.cachedTransports[addr]; !ok {
 		if err := rt.getTransport(req, addr); err != nil {
-			rt.cachedTransportsLck.Unlock()
-
 			if errors.Is(err, ErrBadPinDetected) && rt.badPinHandlerFunc != nil {
 				rt.badPinHandlerFunc(req)
 			}
