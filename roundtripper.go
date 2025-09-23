@@ -364,28 +364,44 @@ func (rt *roundTripper) buildHttp3Transport() *http3.Transport {
 		QUICConfig:      quicConfig,
 
 		Dial: func(ctx context.Context, addr string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlyConnection, error) {
-			udpConn, err := net.ListenUDP("udp", nil)
+			udpAddr, err := net.ResolveUDPAddr("udp", addr)
 			if err != nil {
 				return nil, err
 			}
 
-			network := "udp"
 			ut := &quic.UTransport{
-				Transport: &quic.Transport{
-					Conn: udpConn,
-				},
-
-				QUICSpec: &rt.quicSpec,
+				Transport: &quic.Transport{},
+				QUICSpec:  &rt.quicSpec,
 			}
 
-			udpAddr, err := net.ResolveUDPAddr(network, addr)
+			var udpConn net.PacketConn
+			dialer, ok := rt.dialer.(*socksContextDialer)
+			if !ok {
+
+				// fallback to no proxy
+				udpConn, err = net.ListenUDP("udp", nil)
+				if err != nil {
+					return nil, err
+				}
+
+			} else {
+				udpConn, err = dialer.DialQUIC(ctx, udpAddr, tlsCfg, cfg)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			ut.Transport.Conn = udpConn
+
+			econn, err := ut.DialEarly(ctx, udpAddr, tlsCfg, cfg)
 			if err != nil {
-				return nil, err
+				udpConn.Close()
+				ut.Close()
+
+				return nil, fmt.Errorf("failed to dial QUIC: %w", err)
 			}
 
-			conn, err := ut.DialEarly(ctx, udpAddr, tlsCfg, cfg)
-
-			return conn, err
+			return econn, nil
 		},
 	}
 }

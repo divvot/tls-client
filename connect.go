@@ -16,6 +16,8 @@ import (
 	"time"
 
 	http "github.com/bogdanfinn/fhttp"
+	utls "github.com/bogdanfinn/utls"
+	quic "github.com/refraction-networking/uquic"
 	"golang.org/x/net/proxy"
 
 	"github.com/bogdanfinn/fhttp/http2"
@@ -46,16 +48,63 @@ func (d *directDialer) DialContext(ctx context.Context, network, addr string) (n
 
 type socksContextDialer struct {
 	socksDialer proxy.Dialer
+	proxyUrl    *url.URL
 }
 
-func newSocksContextDialer(socksDialer proxy.Dialer) socksContextDialer {
+func newSocksContextDialer(socksDialer proxy.Dialer, proxyUrl *url.URL) socksContextDialer {
 	return socksContextDialer{
 		socksDialer: socksDialer,
+		proxyUrl:    proxyUrl,
 	}
 }
 
 func (s *socksContextDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	return s.socksDialer.Dial(network, address)
+}
+
+func (s *socksContextDialer) DialQUIC(
+	ctx context.Context,
+	remoteAddr *net.UDPAddr,
+	tlsConf *utls.Config,
+	quicConf *quic.Config,
+) (net.PacketConn, error) {
+
+	username := ""
+	password := ""
+
+	if s.proxyUrl.Scheme != "socks5" && s.proxyUrl.Scheme != "socks5h" {
+		return nil, fmt.Errorf("unsupported proxy scheme: %s", s.proxyUrl.Scheme)
+	}
+
+	if s.proxyUrl.User != nil {
+		username = s.proxyUrl.User.Username()
+		password, _ = s.proxyUrl.User.Password()
+	}
+
+	dialer := NewSOCKS5UDPDialer(s.proxyUrl.Host, username, password)
+
+	// Establish SOCKS5 UDP connection with timeout context
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	socks5Conn, err := dialer.DialUDP(ctx, "udp", remoteAddr.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to establish SOCKS5 UDP connection: %w", err)
+	}
+
+	_, err = socks5Conn.WriteTo([]byte("probe"), remoteAddr.String())
+	if err != nil {
+		socks5Conn.Close()
+		return nil, fmt.Errorf("SOCKS5 probe packet failed: %w", err)
+	}
+
+	// Create a custom net.PacketConn wrapper for QUIC
+	packetConn := &socks5PacketConn{
+		conn:       socks5Conn,
+		remoteAddr: remoteAddr,
+	}
+
+	return packetConn, nil
 }
 
 // Copyright 2018 Google Inc.
@@ -168,7 +217,7 @@ func handleSocks5ProxyDialer(proxyUrl *url.URL, dialer net.Dialer) (proxy.Contex
 		return nil, fmt.Errorf("handleSocks5ProxyDialer: failed to create socks5 proxy: %w", err)
 	}
 
-	scd := newSocksContextDialer(socksDialer)
+	scd := newSocksContextDialer(socksDialer, proxyUrl)
 
 	return &scd, nil
 }
