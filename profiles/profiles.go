@@ -78,6 +78,7 @@ var MappedTLSClients = map[string]ClientProfile{
 	"okhttp4_android_12":     Okhttp4Android12,
 	"okhttp4_android_13":     Okhttp4Android13,
 	"instagram_ios":          InstagramIOS,
+	"ios_18_0":               IOS_18_0,
 }
 
 type ClientProfile struct {
