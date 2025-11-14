@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 )
 
-replace github.com/bogdanfinn/tls-client v1.11.2 => github.com/divvot/tls-client v1.11.2-3
+replace github.com/bogdanfinn/tls-client v1.11.2 => github.com/divvot/tls-client v1.11.2-4
 
 require (
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
